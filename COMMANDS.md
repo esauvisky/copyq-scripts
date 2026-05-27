@@ -58,7 +58,9 @@ Requirements: Python `pygments` for syntax highlighting.
 File: `commands/04-copy-png-file-contents.ini`
 
 Defines `copyImageToClipboard(path)`, a helper that reads PNG bytes from a file,
-writes them into the `&Images` tab, and copies them as `image/png`.
+writes them into the `&Images` tab, and copies them as `image/png`. This exists
+mostly as a workaround for Chrome image-copy bugs where the browser does not put
+image data on the clipboard in the shape CopyQ expects.
 
 Example use from another CopyQ command:
 
@@ -82,8 +84,9 @@ upload('code')
 upload('markdown')
 ```
 
-The Markdown path contains the placeholder `REPLACE_WITH_PAPER_WF_TOKEN`.
-Replace it locally or adapt the command to load a secret from your environment.
+The Markdown path reads its API token from `PAPER_WF_TOKEN` in CopyQ's inherited
+environment. If the variable is missing or empty, the command shows a CopyQ popup
+and aborts before running `curl`.
 
 Requirements: `curl`.
 

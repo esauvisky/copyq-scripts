@@ -52,6 +52,7 @@ Review scripts before importing them. Some commands call local programs or web
 services.
 
 See [COMMANDS.md](COMMANDS.md) for details and examples for each command.
+See [SETTINGS.md](SETTINGS.md) for details about the exported settings.
 
 ## Settings
 
@@ -86,9 +87,8 @@ Some commands expect these tools or Python packages to exist locally:
 - `curl`, used by the upload helper
 - `meld`, used by the diff helper
 
-The upload helper contains a placeholder Paper/Write.as token value
-(`REPLACE_WITH_PAPER_WF_TOKEN`). Replace it locally or adapt the command to read
-a secret from your environment before using Markdown uploads.
+The upload helper reads the Paper/Write.as token from `PAPER_WF_TOKEN` in
+CopyQ's inherited environment.
 
 ## Privacy
 
