@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export CopyQ commands and split them into importable command files."""
+"""Export CopyQ commands and reusable settings."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from pathlib import Path
 
 COMMAND_KEY_RE = re.compile(r"^(\d+)\\(.+?)=(.*)$")
 SIZE_RE = re.compile(r"^size=\d+\s*$")
+SETTINGS_SECTIONS = {"General", "Options", "Plugins", "Shortcuts", "Tabs", "Theme"}
 
 
 def run_copyq_export(start_server: bool) -> str:
@@ -97,9 +98,31 @@ def write_command_files(export_text: str, commands_dir: Path) -> list[Path]:
     return written
 
 
+def copy_settings(config_source: Path, settings_output: Path) -> None:
+    source_text = config_source.read_text(encoding="utf-8")
+    current_section: str | None = None
+    kept_lines: list[str] = []
+
+    for line in source_text.splitlines():
+        section_match = re.match(r"^\[([^]]+)\]$", line)
+        if section_match:
+            current_section = section_match.group(1)
+            if current_section in SETTINGS_SECTIONS:
+                if kept_lines and kept_lines[-1] != "":
+                    kept_lines.append("")
+                kept_lines.append(line)
+            continue
+
+        if current_section in SETTINGS_SECTIONS:
+            kept_lines.append(line)
+
+    settings_output.parent.mkdir(parents=True, exist_ok=True)
+    settings_output.write_text("\n".join(kept_lines).rstrip() + "\n", encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Export CopyQ commands using CopyQ's native export format."
+        description="Export CopyQ commands and reusable settings."
     )
     parser.add_argument(
         "--output",
@@ -118,14 +141,35 @@ def main() -> int:
         action="store_true",
         help="Pass --start-server to CopyQ before evaluating the export command.",
     )
+    parser.add_argument(
+        "--config-source",
+        default=Path.home() / ".config" / "copyq" / "copyq.conf",
+        type=Path,
+        help="CopyQ config file to copy reusable settings from.",
+    )
+    parser.add_argument(
+        "--settings-output",
+        default=Path("settings") / "copyq.conf",
+        type=Path,
+        help="Path for reusable CopyQ settings.",
+    )
+    parser.add_argument(
+        "--skip-settings",
+        action="store_true",
+        help="Only export commands; do not write settings/copyq.conf.",
+    )
     args = parser.parse_args()
 
     export_text = run_copyq_export(start_server=args.start_server)
     args.output.write_text(export_text, encoding="utf-8")
     written = write_command_files(export_text, args.commands_dir)
+    if not args.skip_settings:
+        copy_settings(args.config_source, args.settings_output)
 
     print(f"Wrote {args.output}")
     print(f"Wrote {len(written)} command files to {args.commands_dir}/")
+    if not args.skip_settings:
+        print(f"Wrote {args.settings_output}")
     return 0
 
 
